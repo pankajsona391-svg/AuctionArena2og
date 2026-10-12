@@ -1,0 +1,42 @@
+name: Build Auction Arena APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract Android project ZIP
+        run: |
+          unzip -o auction-arena-android-source-1.zip -d extracted
+
+      - name: Find Gradle project
+        run: |
+          find extracted -name gradlew -type f
+          find extracted -name build.gradle -o -name build.gradle.kts
+
+      - name: Make Gradle wrapper executable
+        run: |
+          chmod +x $(find extracted -name gradlew -type f | head -1)
+
+      - name: Build APK
+        run: |
+          GRADLEW=$(find extracted -name gradlew -type f | head -1)
+          PROJECT_DIR=$(dirname "$GRADLEW")
+          cd "$PROJECT_DIR"
+          "$GRADLEW" assembleDebug --stacktrace
+
+      - name: Find APK
+        run: |
+          find extracted -type f -name "*.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Auction-Arena-APK
+          path: extracted/**/*.apk
