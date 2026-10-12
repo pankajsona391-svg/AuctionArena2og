@@ -8,35 +8,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Extract Android project ZIP
+      - name: Extract project
         run: |
           unzip -o auction-arena-android-source-1.zip -d extracted
+          cd extracted/auction-arena-android
+          echo "PROJECT_DIR=$PWD" >> "$GITHUB_ENV"
 
-      - name: Find Gradle project
-        run: |
-          find extracted -name gradlew -type f
-          find extracted -name build.gradle -o -name build.gradle.kts
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-      - name: Make Gradle wrapper executable
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK
         run: |
-          chmod +x $(find extracted -name gradlew -type f | head -1)
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
 
       - name: Build APK
         run: |
-          GRADLEW=$(find extracted -name gradlew -type f | head -1)
-          PROJECT_DIR=$(dirname "$GRADLEW")
           cd "$PROJECT_DIR"
-          "$GRADLEW" assembleDebug --stacktrace
+          gradle assembleDebug
 
-      - name: Find APK
-        run: |
-          find extracted -type f -name "*.apk"
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: Auction-Arena-APK
-          path: extracted/**/*.apk
+          name: auction-arena-apk
+          path: extracted/auction-arena-android/app/build/outputs/apk/debug/app-debug.apk
